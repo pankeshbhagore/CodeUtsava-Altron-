@@ -152,16 +152,54 @@ const PrivacyCenter = () => {
           </table>
         </div>
 
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start mb-8">
           <Lock className="w-5 h-5 text-emerald-600 mr-3 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-emerald-800 font-medium">
             Sensitive values are bitmasked/hashed. Only structural metadata and patterns are used for AI optimization. <br/>
             Raw production data is never exposed to the AI model.
           </p>
         </div>
+
+        <div className="border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/50 rounded-xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-red-800 dark:text-red-400 flex items-center">
+                <ShieldCheck className="w-5 h-5 mr-2" />
+                Red-Team Penetration Test (Provable Privacy)
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-300">Attempt to leak sensitive data (PII) to the AI engine to test the Privacy Gateway.</p>
+            </div>
+            <button 
+              onClick={async () => {
+                const attackQuery = "SELECT * FROM customers WHERE email = 'ceo@altron.com' AND credit_card = '4111-2222-3333-4444' OR phone = '+91-9876543210' AND name = 'John Doe'";
+                try {
+                  await apiClient.anonymizeQuery(attackQuery);
+                  const resStats = await apiClient.getPrivacyStats();
+                  setStats(resStats);
+                  const resLogs = await apiClient.getPrivacyAudit();
+                  setLogs(resLogs?.audit_entries || []);
+                  alert("Attack Intercepted! Gateway successfully blocked and masked all PII before it reached the AI.");
+                } catch(e) {
+                  console.error(e);
+                }
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold shadow transition-colors"
+            >
+              Launch Attack
+            </button>
+          </div>
+          <div className="bg-white dark:bg-slate-900 rounded border border-red-200 p-4 font-mono text-sm text-slate-700 dark:text-slate-300">
+            <span className="text-red-500 font-bold">ATTACK PAYLOAD: </span>
+            <span>SELECT * FROM customers WHERE email = </span>
+            <span className="bg-yellow-200 text-yellow-900 px-1">'ceo@altron.com'</span>
+            <span> AND credit_card = </span>
+            <span className="bg-yellow-200 text-yellow-900 px-1">'4111-2222-3333-4444'</span>
+            <span> OR phone = </span>
+            <span className="bg-yellow-200 text-yellow-900 px-1">'+91-9876543210'</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default PrivacyCenter;
