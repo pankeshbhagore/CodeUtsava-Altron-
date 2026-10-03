@@ -50,6 +50,9 @@ class ExecutionPlanGraphBuilder:
         return float(int(hashlib.md5(name.encode()).hexdigest()[:8], 16) % 1000)
 
     def build_graph(self, plan: Dict[str, Any]) -> ExecutionGraph:
+        if isinstance(plan, list):
+            plan = plan[0]
+            
         if "Plan" in plan:
             plan_node = plan["Plan"]
         else:
@@ -143,3 +146,4 @@ class ExecutionPlanGraphBuilder:
         for edge in graph.edges:
             nx_g.add_edge(edge.source_id, edge.target_id, **edge.dict())
         return nx_g
+

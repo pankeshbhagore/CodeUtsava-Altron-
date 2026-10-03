@@ -101,7 +101,7 @@ const ExecutionPlan = () => {
           <p className="font-bold text-slate-800">{node.node_type || node["Node Type"]}</p>
           {(node.relation_name || node["Relation Name"]) && <p className="text-sm font-medium text-slate-700">{node.relation_name || node["Relation Name"]}</p>}
           <p className="text-xs text-slate-600 mt-1">(cost: {(node.cost || node["Total Cost"] || 0).toLocaleString()})</p>
-          <p className="text-xs text-slate-600">(rows: {(node.rows || node["Actual Rows"] || 0).toLocaleString()})</p>
+                    <p className="text-xs text-slate-600">(rows: {(node.rows ?? node["Actual Rows"] ?? node["Plan Rows"] ?? 0).toLocaleString()})</p>
         </div>
         
         {((node.children && node.children.length > 0) || (node.Plans && node.Plans.length > 0)) && (
@@ -278,3 +278,4 @@ const ExecutionPlan = () => {
 };
 
 export default ExecutionPlan;
+

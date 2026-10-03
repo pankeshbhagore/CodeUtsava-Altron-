@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Lock, EyeOff, FileKey, CheckCircle2, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -55,11 +55,16 @@ const PrivacyCenter = () => {
       
       <div className="mt-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
         
-        <div className="flex flex-col lg:flex-row items-stretch justify-between mb-8 gap-4">
+                  <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-800 dark:text-indigo-200 text-sm">
+            <h4 className="font-bold flex items-center mb-1"><AlertCircle className="w-4 h-4 mr-1"/> Mechanism Overview</h4>
+            This diagram demonstrates how the PrivDB Privacy Gateway dynamically intercepts and masks production schema before sending it to the AI optimizer. The live anonymization stream below tracks real-time requests.
+          </div>
           
-          {/* Left Table: Original Schema */}
-          <div className="w-full lg:w-[45%]">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Original Schema (Production)</h3>
+          <div className="flex flex-col lg:flex-row items-stretch justify-between mb-8 gap-4">
+            
+            {/* Left Table: Original Schema */}
+            <div className="w-full lg:w-[45%]">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Mechanism: Original Schema (Example)</h3>
             <div className="rounded-lg border border-slate-200 overflow-hidden">
               <table className="w-full text-left text-sm">
                 <thead className="bg-blue-50 text-blue-900">
@@ -204,3 +209,4 @@ const PrivacyCenter = () => {
 };
 
 export default PrivacyCenter;
+

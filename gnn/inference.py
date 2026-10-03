@@ -63,6 +63,9 @@ class GNNInferenceEngine:
         )
         
     def get_execution_tree(self, plan_json: Dict[str, Any], bottlenecks: Optional[List[BottleneckResult]] = None) -> Dict[str, Any]:
+        if isinstance(plan_json, list):
+            plan_json = plan_json[0]
+            
         if "Plan" in plan_json:
             plan_node = plan_json["Plan"]
         else:
@@ -162,3 +165,4 @@ class GNNInferenceEngine:
             aggregate_count=aggregate_count,
             row_estimation_errors=errors
         )
+

@@ -22,30 +22,36 @@ class WorkloadStats(BaseModel):
 class WorkloadAnalyzer:
     def analyze_drift(self, historical_queries: List[Dict[str, Any]], recent_queries: List[Dict[str, Any]]) -> WorkloadDrift:
         hist_tables = set()
+        hist_filters = set()
         for q in historical_queries:
             hist_tables.update(q.get("tables", []))
+            hist_filters.update(q.get("filters", []))
             
         recent_tables = set()
+        recent_filters = set()
         freq_changes = {}
         for q in recent_queries:
             recent_tables.update(q.get("tables", []))
+            recent_filters.update(q.get("filters", []))
             pattern = q.get("pattern", "unknown")
             freq_changes[pattern] = freq_changes.get(pattern, 0.0) + 1.0
             
         new_tables = list(recent_tables - hist_tables)
-        drift_score = len(new_tables) * 0.2
+        new_filters = list(recent_filters - hist_filters)
+        
+        drift_score = len(new_tables) * 0.3 + len(new_filters) * 0.15
         if len(historical_queries) > 0 and len(recent_queries) > 0:
-            drift_score += 0.1
+            drift_score += 0.05
             
         drift_score = min(drift_score, 1.0)
         
         return WorkloadDrift(
             drift_score=drift_score,
             new_tables=new_tables,
-            new_filters=[], 
+            new_filters=new_filters, 
             new_joins=[],   
             frequency_changes=freq_changes,
-            confidence_impact=-drift_score * 0.5,
+            confidence_impact=-(drift_score * 0.5),
             summary=f"Workload drift detected with score {drift_score:.2f}."
         )
 
@@ -82,3 +88,4 @@ class WorkloadAnalyzer:
             top_filters=[], 
             query_distribution=distribution
         )
+
