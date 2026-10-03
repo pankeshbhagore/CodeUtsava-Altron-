@@ -107,8 +107,27 @@ class AnalysisService:
         self.recent_queries: List[Dict] = []
 
     def analyze_query(self, sql: str, execution_stats: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Full pipeline: privacy → normalization → analysis → recommendations."""
+        """Full pipeline: privacy -> normalization -> analysis -> recommendations."""
         self.queries_analyzed += 1
+
+        # Attempt to get real execution stats via EXPLAIN if not provided
+        if not execution_stats:
+            execution_stats = {}
+            try:
+                import json
+                from database.connection import get_db_connection, release_db_connection
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute('EXPLAIN (FORMAT JSON) ' + sql)
+                plan = cur.fetchone()[0][0]['Plan']
+                execution_stats['estimated_rows'] = plan.get('Plan Rows', 100000)
+                execution_stats['cost'] = plan.get('Total Cost', 33000)
+                execution_stats['execution_time_ms'] = plan.get('Total Cost', 33000) / 100.0  # rough heuristic
+                execution_stats['planning_time_ms'] = 5 # heuristic
+                release_db_connection(conn)
+            except Exception as e:
+                print("Could not EXPLAIN query:", e)
+
 
         # Step 1: Privacy gateway
         privacy_result = self.gateway.process(sql, execution_stats)
@@ -152,9 +171,11 @@ class AnalysisService:
             "join_columns": normalized.joins if normalized.joins else [],
             "order_by_columns": normalized.sorting if normalized.sorting else [],
             "group_by_columns": normalized.grouping if normalized.grouping else [],
-            "estimated_rows": execution_stats.get("estimated_rows", 100000) if execution_stats else 100000,
-            "query_frequency": execution_stats.get("query_frequency", 50) if execution_stats else 50,
-            "execution_time_ms": execution_stats.get("execution_time_ms", 1000) if execution_stats else 1000,
+            "estimated_rows": execution_stats.get("estimated_rows", 100000),
+            "query_frequency": execution_stats.get("query_frequency", 50),
+            "execution_time_ms": execution_stats.get("execution_time_ms", 1000),
+            "planning_time_ms": execution_stats.get("planning_time_ms", 45),
+            "cost": execution_stats.get("cost", 33000),
         }
         try:
             idx_recs = self.index_optimizer.analyze_query(
@@ -287,6 +308,8 @@ class AnalysisService:
                 "estimated_rows": metadata_for_optimizer.get("estimated_rows"),
                 "query_frequency": metadata_for_optimizer.get("query_frequency"),
                 "execution_time_ms": metadata_for_optimizer.get("execution_time_ms"),
+                "planning_time_ms": metadata_for_optimizer.get("planning_time_ms"),
+                "cost": metadata_for_optimizer.get("cost"),
             },
             "privacy_status": {
                 "is_safe": privacy_result.is_safe,
@@ -660,6 +683,10 @@ class AnalysisService:
 
 
 analysis_service = AnalysisService()
+
+
+
+
 
 
 

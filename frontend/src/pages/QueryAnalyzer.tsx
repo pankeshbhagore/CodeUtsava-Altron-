@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Play, Sparkles, Shield, Database, AlertTriangle, Info, AlertCircle, FlaskConical } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -51,7 +51,7 @@ const QueryAnalyzer = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">AI Database Optimizer</h1>
-          <p className="text-sm text-slate-500">Privacy-Preserving • Explainable • Safe Optimization</p>
+          <p className="text-sm text-slate-500">Privacy-Preserving â€¢ Explainable â€¢ Safe Optimization</p>
         </div>
       </div>
 
@@ -115,18 +115,18 @@ const QueryAnalyzer = () => {
                   {results?.metadata?.execution_time_ms ? `${(results.metadata.execution_time_ms / 1000).toFixed(2)} sec` : '-'}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="text-slate-500">Planning Time</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {results ? '45 ms' : '-'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Cost</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {results?.metadata?.estimated_rows ? (results.metadata.estimated_rows * 0.33).toLocaleString(undefined, {maximumFractionDigits:0}) : '-'}
-                </span>
-              </div>
+                              <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <span className="text-slate-500">Planning Time</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {results?.metadata?.planning_time_ms ? ` ms` : (results ? '45 ms' : '-')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Cost</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {results?.metadata?.cost ? results.metadata.cost.toLocaleString(undefined, {maximumFractionDigits:0}) : (results?.metadata?.estimated_rows ? (results.metadata.estimated_rows * 0.33).toLocaleString(undefined, {maximumFractionDigits:0}) : '-')}
+                  </span>
+                </div>
             </div>
 
             {results && (
@@ -223,4 +223,7 @@ const QueryAnalyzer = () => {
 };
 
 export default QueryAnalyzer;
+
+
+
 
