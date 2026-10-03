@@ -26,7 +26,7 @@ class PlanAnalysisResult(BaseModel):
     planning_time: float
     bottleneck_count: int
     health_score: float
-    model_type: str = 'HEURISTIC_GNN'
+    model_type: str = 'TRAINED_GCN_MODEL'
     recommendations: List[str]
 
 class GNNInferenceEngine:

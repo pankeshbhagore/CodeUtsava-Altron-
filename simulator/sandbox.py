@@ -31,16 +31,26 @@ class SimulationResult(BaseModel):
 class SandboxSimulator:
     """Simulates database optimization impacts."""
     
-    def simulate_change(self, recommendation: Dict[str, Any], table_stats: Dict[str, Any], workload: List[Dict[str, Any]]) -> SimulationResult:
-        change_type = recommendation.get('type', 'index')
+    def simulate_change(self, recommendation: Dict[str, Any], table_stats: Dict[str, Any], workload: Any) -> SimulationResult:
+        change_type = recommendation.get('type', 'index').lower()
+        create_sql = recommendation.get('create_sql', '')
         
-                # Base metrics (Before)
+        # Base metrics (Before)
         row_count = table_stats.get('row_count', 1000000)
         avg_row_size = table_stats.get('avg_row_size', 100)
         
-        before_exec_time = workload[0].get('execution_time_ms') if workload and workload[0].get('execution_time_ms') else MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size)
-        # Simplified Carbon footprint calculation (for 1M queries)
-        # Assuming 200W server, PUE 1.2, 400g CO2/kWh
+        # Handle dict vs list workload bug
+        if isinstance(workload, list) and len(workload) > 0:
+            before_exec_time = workload[0].get('execution_time_ms', MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size))
+            sample_query = workload[0].get('query', '')
+        elif isinstance(workload, dict):
+            before_exec_time = workload.get('execution_time_ms', MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size))
+            sample_query = workload.get('query', '')
+        else:
+            before_exec_time = MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size)
+            sample_query = ''
+            
+        # Carbon calculation
         co2_per_ms = (200 * 1.2 * 400) / (3600 * 1000 * 1000) * 1_000_000
         
         before_metrics = SimMetrics(
@@ -55,49 +65,105 @@ class SandboxSimulator:
             index_size_mb=0.0,
             carbon_emissions_grams=before_exec_time * co2_per_ms
         )
+
+        after_exec_time = before_exec_time
+        sim_method = 'HEURISTIC'
+        storage_increase_mb = 0.0
+        write_penalty_ms = 0.0
         
-        # After metrics
+        # REAL POSTGRESQL SANDBOX EXECUTION (P0 Fix)
+        if sample_query and (create_sql or change_type == 'rewrite' or change_type == 'sql_rewrite'):
+            try:
+                import json
+                from database.connection import get_db_connection, release_db_connection
+                conn = get_db_connection()
+                cur = conn.cursor()
+                
+                # Start transaction that will NEVER be committed
+                cur.execute('BEGIN;')
+                
+                if change_type in ('index', 'composite', 'single', 'composite_index', 'vector') and create_sql:
+                    # Execute before EXPLAIN
+                    cur.execute(f"EXPLAIN (FORMAT JSON) {sample_query}")
+                    b_plan = cur.fetchone()[0][0]['Plan']
+                    b_cost = b_plan.get('Total Cost', before_exec_time)
+                    
+                    # Apply change in sandbox
+                    cur.execute(create_sql)
+                    
+                    # Execute after EXPLAIN
+                    cur.execute(f"EXPLAIN (FORMAT JSON) {sample_query}")
+                    a_plan = cur.fetchone()[0][0]['Plan']
+                    a_cost = a_plan.get('Total Cost', before_exec_time)
+                    
+                    speedup = a_cost / max(b_cost, 0.001)
+                    after_exec_time = before_exec_time * min(speedup, 1.0)
+                    sim_method = 'POSTGRES_EXPLAIN_SANDBOX'
+                    storage_increase_mb = (len(recommendation.get('columns', ['x'])) * 50.0) # heuristic size
+                    write_penalty_ms = 0.5 * len(recommendation.get('columns', ['x']))
+                    
+                elif change_type in ('rewrite', 'sql_rewrite') and recommendation.get('rewritten_sql'):
+                    rewritten = recommendation['rewritten_sql']
+                    cur.execute(f"EXPLAIN (FORMAT JSON) {sample_query}")
+                    b_cost = cur.fetchone()[0][0]['Plan']['Total Cost']
+                    
+                    cur.execute(f"EXPLAIN (FORMAT JSON) {rewritten}")
+                    a_cost = cur.fetchone()[0][0]['Plan']['Total Cost']
+                    
+                    speedup = a_cost / max(b_cost, 0.001)
+                    after_exec_time = before_exec_time * min(speedup, 1.0)
+                    sim_method = 'POSTGRES_EXPLAIN_SANDBOX'
+                    
+                # ALways Rollback
+                cur.execute('ROLLBACK;')
+                cur.close()
+                release_db_connection(conn)
+            except Exception as e:
+                print(f"Sandbox execution failed: {e}")
+                # Ensure rollback on fail
+                try:
+                    cur.execute('ROLLBACK;')
+                    cur.close()
+                    release_db_connection(conn)
+                except:
+                    pass
+
+        # Fallback to heuristics if Postgres connection fails or query is invalid
+        if sim_method == 'HEURISTIC':
+            if change_type in ('index', 'composite', 'single', 'composite_index', 'vector'):
+                index_impact = MetricsCalculator.calculate_index_impact(recommendation, table_stats, workload if isinstance(workload, list) else [workload])
+                after_exec_time = max(1.0, before_exec_time * (1 - index_impact.read_improvement_pct / 100.0))
+                storage_increase_mb = index_impact.storage_bytes / (1024 * 1024)
+                write_penalty_ms = before_metrics.write_latency_ms * (index_impact.write_overhead_pct / 100.0)
+            elif change_type in ('partitioning', 'partition'):
+                after_exec_time = before_exec_time * 0.25 
+                storage_increase_mb = 15.0
+            elif change_type in ('sql_rewrite', 'rewrite'):
+                after_exec_time = before_exec_time * 0.6 
+                
         after_metrics = before_metrics.model_copy()
+        after_metrics.execution_time_ms = after_exec_time
+        after_metrics.write_latency_ms += write_penalty_ms
+        after_metrics.index_size_mb = storage_increase_mb
+        after_metrics.storage_mb += storage_increase_mb
+        after_metrics.carbon_emissions_grams = after_metrics.execution_time_ms * co2_per_ms
+        
         improvement = 0.0
-        risk = "LOW"
-        
-        change_type = recommendation.get('type', 'index').lower()
-        
-        if change_type in ('index', 'composite_index', 'single', 'composite', 'composite index', 'single index'):
-            index_impact = MetricsCalculator.calculate_index_impact(recommendation, table_stats, workload)
-            after_metrics.execution_time_ms = max(1.0, before_exec_time * (1 - index_impact.read_improvement_pct / 100.0))
-            after_metrics.write_latency_ms = before_metrics.write_latency_ms * (1 + index_impact.write_overhead_pct / 100.0)
-            after_metrics.index_size_mb = index_impact.storage_bytes / (1024 * 1024)
-            after_metrics.storage_mb += after_metrics.index_size_mb
-            after_metrics.estimated_rows_scanned = int(row_count * recommendation.get('estimated_selectivity', 0.1))
-            improvement = index_impact.read_improvement_pct
+        if before_exec_time > 0:
+            improvement = ((before_exec_time - after_exec_time) / before_exec_time) * 100.0
             
-        elif change_type == 'partitioning':
-            part_impact = MetricsCalculator.calculate_partition_impact(recommendation, table_stats, workload)
-            after_metrics.execution_time_ms = before_exec_time * (1 - part_impact.pruning_benefit_pct / 100.0)
-            after_metrics.estimated_rows_scanned = int(row_count * (1 - part_impact.pruning_benefit_pct / 100.0))
-            improvement = part_impact.pruning_benefit_pct
+        net_benefit = max(0.0, improvement - write_penalty_ms)
+        risk = "LOW" if change_type in ('index', 'composite', 'single', 'vector') else "MEDIUM"
+        if 'partition' in change_type or 'shard' in change_type:
             risk = "HIGH"
             
-        elif change_type == 'sql_rewrite':
-            after_metrics.execution_time_ms = before_exec_time * 0.6 # 40% improvement
-            after_metrics.cpu_cost = before_metrics.cpu_cost * 0.6
-            improvement = 40.0
-            risk = "MEDIUM"
-
-        after_metrics.carbon_emissions_grams = after_metrics.execution_time_ms * co2_per_ms
-        net_benefit = max(0.0, improvement - (after_metrics.write_latency_ms - before_metrics.write_latency_ms))
-        
         return SimulationResult(
             before_metrics=before_metrics,
             after_metrics=after_metrics,
-            improvement_pct=improvement,
-            net_benefit_score=net_benefit,
+            improvement_pct=round(improvement, 2),
+            net_benefit_score=round(net_benefit, 2),
             risk_level=risk,
-            simulation_method='SIMULATED',
+            simulation_method=sim_method,
             simulation_id=str(uuid.uuid4()),
             timestamp=datetime.now(timezone.utc).isoformat()
         )
-
-
-

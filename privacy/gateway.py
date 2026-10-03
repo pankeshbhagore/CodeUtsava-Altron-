@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 from typing import Optional, Any
 from .anonymizer import SQLAnonymizer

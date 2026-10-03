@@ -67,20 +67,35 @@ class DatabaseOptimizationEnv:
         next_state = self.state.copy()
         
         # Simulate changes based on action
+        latency_reduction = 0.0
+        storage_increase = 0.0
+        
         if action == self.ACTION_ADD_COMPOSITE_INDEX or action == self.ACTION_ADD_SINGLE_INDEX:
-            next_state[1] *= 0.5 
-            next_state[6] = min(next_state[6] + 0.1, 1.0)
+            latency_reduction = next_state[1] * 0.5
+            next_state[1] -= latency_reduction
+            storage_increase = 0.1
+            next_state[6] = min(next_state[6] + storage_increase, 1.0)
         elif action == self.ACTION_PARTITION_TABLE or action == self.ACTION_CHANGE_PARTITION_KEY:
-            next_state[1] *= 0.6
+            latency_reduction = next_state[1] * 0.4
+            next_state[1] -= latency_reduction
             next_state[8] = min(next_state[8] + 0.2, 1.0)
         elif action == self.ACTION_RECOMMEND_SHARDING:
-            next_state[1] *= 0.4
+            latency_reduction = next_state[1] * 0.6
+            next_state[1] -= latency_reduction
             next_state[9] = min(next_state[9] + 0.3, 1.0)
         elif action == self.ACTION_REWRITE_SQL:
-            next_state[1] *= 0.7
+            latency_reduction = next_state[1] * 0.3
+            next_state[1] -= latency_reduction
             next_state[8] *= 0.8
             
-        reward = 0.0 # Standard transition reward
+        # REAL REWARD COMPUTATION (P0 Fix)
+        reward = (latency_reduction * 100.0) - (storage_increase * 20.0)
+        if action == self.ACTION_DO_NOTHING:
+            if self.state[1] > 0.5: # high latency
+                reward = -10.0 # penalty for doing nothing on a slow query
+            else:
+                reward = 5.0 # reward for avoiding unnecessary changes
+                
         done = True  
         info = {"action": action, "context": self.current_context}
         

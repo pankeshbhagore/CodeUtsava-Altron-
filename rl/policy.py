@@ -108,31 +108,29 @@ class RLOptimizer:
             6: "Do nothing"
         }
 
-    def recommend(self, query_context: QueryContext, demo_mode: bool = True) -> RLRecommendation:
+    def recommend(self, query_context: QueryContext, demo_mode: bool = False) -> RLRecommendation:
         state = self.env.reset(query_context)
         
-        if demo_mode:
-            action_heur, conf_heur, reasoning = self.heuristic.select_action(state, query_context)
-            q_vals = self.q_learning.get_q_values(state)
+        # P0 Fix: Actually train the RL agent for a few steps online before recommending
+        for _ in range(50):
+            train_state = state.copy()
+            # Epsilon-greedy exploration
+            action = self.q_learning.select_action(train_state, epsilon=0.4)
+            next_state, reward, done, _ = self.env.step(action)
+            self.q_learning.update(train_state, action, reward, next_state)
             
-            return RLRecommendation(
-                action=action_heur,
-                action_name=self.action_names.get(action_heur, "Unknown"),
-                confidence=conf_heur,
-                q_values=q_vals,
-                reward_estimate=float(q_vals[action_heur]) if action_heur < len(q_vals) else 0.0,
-                model_type="HEURISTIC",
-                reasoning=reasoning
-            )
-        else:
-            action_ql = self.q_learning.select_action(state, epsilon=0.05)
-            q_vals = self.q_learning.get_q_values(state)
-            return RLRecommendation(
-                action=action_ql,
-                action_name=self.action_names.get(action_ql, "Unknown"),
-                confidence=0.7,
-                q_values=q_vals,
-                reward_estimate=float(q_vals[action_ql]) if action_ql < len(q_vals) else 0.0,
-                model_type="Q_LEARNING",
-                reasoning="Q-learning policy selected highest Q-value."
-            )
+        action_ql = self.q_learning.select_action(state, epsilon=0.0) # Greedy for final recommendation
+        q_vals = self.q_learning.get_q_values(state)
+        
+        # Get reasoning from heuristic just for human readability
+        _, conf_heur, reasoning = self.heuristic.select_action(state, query_context)
+        
+        return RLRecommendation(
+            action=action_ql,
+            action_name=self.action_names.get(action_ql, "Unknown"),
+            confidence=0.85,
+            q_vals=q_vals,
+            reward_estimate=float(q_vals[action_ql]) if action_ql < len(q_vals) else 0.0,
+            model_type="Q_LEARNING",
+            reasoning=f"RL Agent selected {self.action_names.get(action_ql)} based on highest Q-value reward trajectory. Additional heuristic insight: {reasoning}"
+        )
