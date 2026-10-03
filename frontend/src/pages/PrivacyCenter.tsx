@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, Lock, EyeOff, FileKey, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Lock, EyeOff, FileKey, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 
 const StatusBadge = ({ title, value, status }: { title: string, value: string, status: 'good' | 'warning' | 'error' }) => {

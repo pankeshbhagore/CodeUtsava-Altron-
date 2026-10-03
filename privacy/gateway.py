@@ -1,22 +1,17 @@
 from pydantic import BaseModel
 from typing import Optional, Any
-from .anonymizer import SQLAnonymizer, AnonymizedResult
+from .anonymizer import SQLAnonymizer
 from .pii_detector import PIIDetector, PIIDetectionResult
-from .metadata_extractor import MetadataExtractor, QueryMetadata
+from .metadata_extractor import MetadataExtractor
 from .audit import PrivacyAuditor, AuditEntry
-import uuid
-import hashlib
-import json
-
+from .bitmasker import AttributeBitmasker
 
 class PrivacyProcessedResult(BaseModel):
-    anonymized_sql: Optional[str] = None
-    anonymization_detail: Optional[AnonymizedResult] = None
-    metadata: Optional[QueryMetadata] = None
+    anonymized_sql: str
+    metadata: dict
     pii_scan_result: PIIDetectionResult
     audit_entry: AuditEntry
     is_safe: bool
-
 
 class PrivacyGateway:
     def __init__(self):
@@ -24,16 +19,21 @@ class PrivacyGateway:
         self.pii_detector = PIIDetector()
         self.metadata_extractor = MetadataExtractor()
         self.auditor = PrivacyAuditor()
+        self.bitmasker = AttributeBitmasker()
+
 
     def process(self, raw_sql: str, execution_stats: dict = None) -> PrivacyProcessedResult:
         request_id = str(uuid.uuid4())
 
         pii_result = self.pii_detector.detect_pii(raw_sql)
 
-        # Always anonymize - PII scan is informational
+                # Always anonymize - PII scan is informational
         anonymized = self.anonymizer.anonymize(raw_sql)
         anonymization_status = anonymized.anonymization_status
-        metadata = self.metadata_extractor.extract_metadata(raw_sql, execution_stats)
+        raw_metadata = self.metadata_extractor.extract_metadata(raw_sql, execution_stats)
+        
+        # Apply strict attribute bitmasking to metadata before returning
+        metadata = self.bitmasker.mask_dict(raw_metadata)
 
         payload_hash = hashlib.sha256(
             anonymized.anonymized_sql.encode()
@@ -66,3 +66,6 @@ class PrivacyGateway:
     def validate_ai_payload(self, payload: dict) -> bool:
         payload_str = json.dumps(payload)
         return not self.pii_detector.contains_pii(payload_str)
+
+
+

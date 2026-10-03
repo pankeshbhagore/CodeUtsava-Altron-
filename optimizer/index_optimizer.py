@@ -101,30 +101,52 @@ Return ONLY the JSON object.
     def _analyze_heuristic(self, sql: str, metadata: Dict[str, Any]) -> List[IndexRecommendation]:
         recommendations = []
         tables = metadata.get("tables", [])
+        filters = metadata.get("filter_columns", [])
+        joins = metadata.get("join_count", 0)
+        
         if not tables:
             return recommendations
             
         main_table = tables[0]
         
-        # Simple heuristic fallback
-        idx_type = "composite"
-        cols_str = "idx_col_1, idx_col_2"
-        idx_name = f"idx_{main_table}_opt"
+        # Real heuristic based on extracted filters
+        idx_cols = []
+        for f_col in filters:
+            if isinstance(f_col, str) and "." in f_col:
+                t, c = f_col.split(".")
+                if t == main_table:
+                    idx_cols.append(c)
+            elif isinstance(f_col, str):
+                idx_cols.append(f_col)
+                
+        # If no explicit filters found, but joins exist, we might need a generic index
+        if not idx_cols:
+            if joins > 0:
+                idx_cols = ["id", "created_at"]  # common join/sort columns
+            else:
+                return recommendations
+                
+        # Limit to 3 columns max
+        idx_cols = idx_cols[:3]
+        
+        idx_type = "composite" if len(idx_cols) > 1 else "single"
+        cols_str = ", ".join(idx_cols)
+        idx_name = f"idx_{main_table}_{'_'.join(idx_cols).replace('.', '_')}"
         
         recommendation = IndexRecommendation(
             type=idx_type,
-            columns=["idx_col_1", "idx_col_2"],
+            columns=idx_cols,
             table=main_table,
             create_sql=f"CREATE INDEX {idx_name} ON {main_table} ({cols_str});",
             drop_sql=f"DROP INDEX {idx_name};",
-            reason=f"Fallback heuristic recommendation.",
-            evidence=f"Analyzed query structure.",
-            estimated_improvement_pct=75.0,
-            storage_overhead_mb=1.5,
-            write_latency_impact_ms=2.0,
-            confidence=0.8,
-            risk_level="MEDIUM"
+            reason=f"Heuristic suggested {idx_type} index on frequently filtered columns.",
+            evidence=f"Extracted filter columns from AST: {', '.join(idx_cols)}",
+            estimated_improvement_pct=60.0 + (10.0 * len(idx_cols)),
+            storage_overhead_mb=50.0 * len(idx_cols),
+            write_latency_impact_ms=0.5 * len(idx_cols),
+            confidence=0.75,
+            risk_level="LOW"
         )
-        
         recommendations.append(recommendation)
+        
         return recommendations

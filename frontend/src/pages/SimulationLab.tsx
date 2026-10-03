@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FlaskConical, Play, CheckCircle2, AlertTriangle, ArrowRight, ArrowRightCircle } from 'lucide-react';
+﻿import React, { useEffect, useState } from 'react';
+import { FlaskConical, Play, CheckCircle2, AlertTriangle, ArrowRight, ArrowRightCircle, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -175,28 +175,28 @@ const SimulationLab = () => {
                       strokeWidth="12" 
                       fill="none" 
                       strokeDasharray="251.2" 
-                      strokeDashoffset={251.2 - (251.2 * (simResult ? simResult.improvement_pct : 90) / 100)} 
+                      strokeDashoffset={251.2 - (251.2 * (currentSim ? currentSim.improvement_pct : 90) / 100)} 
                       strokeLinecap="round" 
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{simResult ? Math.round(simResult.improvement_pct) : 90}%</span>
+                    <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{currentSim ? Math.round(currentSim.improvement_pct) : 90}%</span>
                   </div>
                 </div>
                 <p className="text-emerald-600 font-bold mt-4 text-center">Query Time Reduced</p>
               </div>
 
-              {simResult && simResult.before_metrics.carbon_emissions_grams !== undefined && (
+              {currentSim && currentSim.before_metrics.carbon_emissions_grams !== undefined && (
                 <div className="mt-8 w-full bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
                   <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-sm mb-2 flex items-center">
-                    ?? Green Computing Impact
+                    🌿 Green Computing Impact
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
                     Estimated CO2 reduction per 1M queries:
                   </p>
                   <div className="flex items-end space-x-2">
                     <span className="text-2xl font-black text-emerald-600">
-                      {(simResult.before_metrics.carbon_emissions_grams - simResult.after_metrics.carbon_emissions_grams).toFixed(1)}
+                      {(currentSim.before_metrics.carbon_emissions_grams - currentSim.after_metrics.carbon_emissions_grams).toFixed(1)}
                     </span>
                     <span className="text-sm text-emerald-700 font-semibold mb-1">grams CO2</span>
                   </div>
@@ -218,6 +218,7 @@ const SimulationLab = () => {
 };
 
 export default SimulationLab;
+
 
 
 

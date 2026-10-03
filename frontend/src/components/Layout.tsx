@@ -1,4 +1,5 @@
 import React from 'react';
+import { Copilot } from './Copilot';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -100,5 +101,6 @@ const Layout: React.FC<LayoutProps> = ({ children, darkMode, toggleDarkMode }) =
 };
 
 export default Layout;
+
 
 

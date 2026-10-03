@@ -638,6 +638,9 @@ class AnalysisService:
             try:
                 client = OpenAI(api_key=api_key, organization=org_id)
                 
+                # Critical Privacy Gate: Sanitize the raw user prompt for PII (emails, names, ips)
+                sanitized_question = self.privacy_gateway.pii_detector.mask_pii(question)
+                
                 # We only send ANONYMIZED metadata and questions to OpenAI
                 system_prompt = (
                     "You are the PrivDB Database Optimization Assistant. "
@@ -653,7 +656,7 @@ class AnalysisService:
                     model=model_name,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"User question: {question}\n\nContext:\n{context}"}
+                        {"role": "user", "content": f"User question: {sanitized_question}\n\nContext:\n{context}"}
                     ],
                     max_tokens=300
                 )
@@ -693,6 +696,7 @@ class AnalysisService:
 
 
 analysis_service = AnalysisService()
+
 
 
 
