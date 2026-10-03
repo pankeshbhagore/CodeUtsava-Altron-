@@ -1,0 +1,31 @@
+{
+  "queries": [
+    {
+      "query": "SELECT * FROM transactions;",
+      "plan": {
+        "Plan": {
+          "Node Type": "Seq Scan",
+          "Relation Name": "transactions",
+          "Startup Cost": 0.00,
+          "Total Cost": 1034.00,
+          "Plan Rows": 60000,
+          "Plan Width": 72
+        }
+      }
+    },
+    {
+      "query": "SELECT * FROM orders WHERE status = 'pending';",
+      "plan": {
+        "Plan": {
+          "Node Type": "Seq Scan",
+          "Relation Name": "orders",
+          "Filter": "(status = 'pending'::text)",
+          "Startup Cost": 0.00,
+          "Total Cost": 284.00,
+          "Plan Rows": 3750,
+          "Plan Width": 68
+        }
+      }
+    }
+  ]
+}
