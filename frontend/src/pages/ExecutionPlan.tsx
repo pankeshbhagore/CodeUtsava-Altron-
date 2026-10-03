@@ -87,7 +87,7 @@ const ExecutionPlan = () => {
     }
   };
 
-  // Simplified Recursive Tree Component (Mocking the visual tree structure)
+  // Simplified Recursive json Component (Mocking the visual json structure)
   const renderTree = (node: any, level = 0) => {
     if (!node) return null;
     const isSelected = selectedNode === node;
@@ -100,7 +100,7 @@ const ExecutionPlan = () => {
         >
           <p className="font-bold text-slate-800">{node.node_type || node["Node Type"]}</p>
           {(node.relation_name || node["Relation Name"]) && <p className="text-sm font-medium text-slate-700">{node.relation_name || node["Relation Name"]}</p>}
-          <p className="text-xs text-slate-600 mt-1">(cost: {(node.cost || node["Total Cost"] || 0).toLocaleString()})</p>
+                    <p className="text-xs text-slate-600 mt-1">(cumul. cost: {(node.cost || node["Total Cost"] || 0).toLocaleString()})</p>
                     <p className="text-xs text-slate-600">(rows: {(node.rows ?? node["Actual Rows"] ?? node["Plan Rows"] ?? 0).toLocaleString()})</p>
         </div>
         
@@ -144,10 +144,10 @@ const ExecutionPlan = () => {
             Graph View
           </button>
           <button 
-            className={`px-6 py-2 rounded-md text-sm font-bold ${activeTab === 'tree' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-slate-200'}`}
-            onClick={() => setActiveTab('tree')}
+            className={`px-6 py-2 rounded-md text-sm font-bold ${activeTab === 'json' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-slate-200'}`}
+            onClick={() => setActiveTab('json')}
           >
-            Tree View
+            Raw JSON
           </button>
         </div>
         <button className="flex items-center px-4 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-medium text-sm">
@@ -156,7 +156,7 @@ const ExecutionPlan = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left: Visual Tree */}
+        {/* Left: Visual json */}
         <div className="w-full lg:w-2/3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-x-auto min-h-[500px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-slate-800 dark:text-slate-100">Query Execution Plan (Graph Representation)</h3>
@@ -200,11 +200,15 @@ const ExecutionPlan = () => {
               </button>
               {error && <p className="text-red-500 mt-2 text-sm max-w-md text-center">{error}</p>}
             </div>
-          ) : (
-            <div className="flex justify-center pt-8">
+          ) : activeTab === 'graph' ? (
+            <div className="flex justify-center pt-8 overflow-auto">
               {renderTree(result.execution_tree || JSON.parse(planJson)[0].Plan)}
             </div>
-          )}
+        ) : (
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg overflow-auto max-h-[600px] text-xs font-mono">
+              <pre>{JSON.stringify(result.execution_tree || JSON.parse(planJson)[0].Plan, null, 2)}</pre>
+            </div>
+        )}
         </div>
 
         {/* Right: Node Details */}
@@ -230,10 +234,10 @@ const ExecutionPlan = () => {
                   <span className="text-slate-500">Actual Rows</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">{(selectedNode.rows || selectedNode["Actual Rows"] || 0).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-50 pb-2">
-                  <span className="text-slate-500">Cost</span>
-                  <span className="font-medium text-slate-800 dark:text-slate-200">{(selectedNode.cost || selectedNode["Total Cost"] || 0).toLocaleString()}</span>
-                </div>
+                                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                    <span className="text-slate-500">Cumulative Cost</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{(selectedNode.cost || selectedNode["Total Cost"] || 0).toLocaleString()}</span>
+                  </div>
                 <div className="flex justify-between border-b border-slate-50 pb-2">
                   <span className="text-slate-500">Condition</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">{selectedNode.Filter || '-'}</span>
@@ -278,4 +282,10 @@ const ExecutionPlan = () => {
 };
 
 export default ExecutionPlan;
+
+
+
+
+
+
 

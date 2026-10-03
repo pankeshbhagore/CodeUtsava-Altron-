@@ -33,11 +33,11 @@ class SandboxSimulator:
     def simulate_change(self, recommendation: Dict[str, Any], table_stats: Dict[str, Any], workload: List[Dict[str, Any]]) -> SimulationResult:
         change_type = recommendation.get('type', 'index')
         
-        # Base metrics (Before)
+                # Base metrics (Before)
         row_count = table_stats.get('row_count', 1000000)
         avg_row_size = table_stats.get('avg_row_size', 100)
         
-        before_exec_time = MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size)
+        before_exec_time = workload[0].get('execution_time_ms') if workload and workload[0].get('execution_time_ms') else MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size)
         before_metrics = SimMetrics(
             execution_time_ms=before_exec_time,
             planning_time_ms=1.5,
@@ -91,4 +91,5 @@ class SandboxSimulator:
             simulation_id=str(uuid.uuid4()),
             timestamp=datetime.now(timezone.utc).isoformat()
         )
+
 

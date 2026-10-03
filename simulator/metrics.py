@@ -46,9 +46,12 @@ class MetricsCalculator:
         
         storage_bytes = cls.estimate_index_size(row_count, avg_row_size, num_cols)
         
-        # Simulated improvements
-        selectivity = index_config.get('estimated_selectivity', 0.1)
-        read_improvement = 100.0 * (1.0 - selectivity) if selectivity < 1.0 else 0.0
+                # Simulated improvements
+        if 'estimated_improvement_pct' in index_config:
+            read_improvement = index_config['estimated_improvement_pct']
+        else:
+            selectivity = index_config.get('estimated_selectivity', 0.1)
+            read_improvement = 100.0 * (1.0 - selectivity) if selectivity < 1.0 else 0.0
         write_overhead = num_cols * 1.5 
         maintenance_score = (storage_bytes / (1024 * 1024)) * 0.1
         
@@ -114,3 +117,4 @@ class MetricsCalculator:
         # Combine IO and CPU costs
         cost = (pages * cls.SEQ_PAGE_COST) + (row_count * cls.CPU_TUPLE_COST)
         return cost * 1.0 # arbitrary conversion to ms for sim
+

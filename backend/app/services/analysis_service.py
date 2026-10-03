@@ -201,9 +201,10 @@ class AnalysisService:
                     "confidence": r.confidence,
                     "risk_level": r.risk_level,
                     "status": "pending",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                                        "created_at": datetime.now(timezone.utc).isoformat(),
                     "source_sql": privacy_result.anonymized_sql,
                     "metric_source": "HEURISTIC",
+                    "metadata": metadata_for_optimizer,
                 }
                 self.recommendations[rec_id] = rec_data
                 index_recs.append(rec_data)
@@ -241,10 +242,11 @@ class AnalysisService:
                             "confidence": pr.confidence,
                             "risk_level": "HIGH",
                             "status": "pending",
-                            "created_at": datetime.now(timezone.utc).isoformat(),
-                            "source_sql": privacy_result.anonymized_sql,
-                            "metric_source": "HEURISTIC",
-                        }
+                                                "created_at": datetime.now(timezone.utc).isoformat(),
+                    "source_sql": privacy_result.anonymized_sql,
+                    "metric_source": "HEURISTIC",
+                    "metadata": metadata_for_optimizer,
+                }
                         self.recommendations[rec_id] = rec_data
                         partition_recs.append(rec_data)
                 except Exception:
@@ -268,10 +270,11 @@ class AnalysisService:
                 "confidence": rw["confidence"],
                 "risk_level": "MEDIUM",
                 "status": "pending",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "source_sql": privacy_result.anonymized_sql,
-                "metric_source": "HEURISTIC",
-            }
+                                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "source_sql": privacy_result.anonymized_sql,
+                    "metric_source": "HEURISTIC",
+                    "metadata": metadata_for_optimizer,
+                }
             self.recommendations[rec_id] = rec_data
             rewrite_recs.append(rec_data)
 
@@ -341,13 +344,20 @@ class AnalysisService:
             return {"error": "Recommendation not found"}
 
         table_name = rec.get("table", "transactions")
-        table_stats = DEMO_TABLE_STATS.get(table_name.lower(), DEMO_TABLE_STATS["transactions"])
+        
+        # Get real stats if possible
+        table_stats = get_real_table_stats(table_name)
+        if not table_stats:
+            table_stats = DEMO_TABLE_STATS.get(table_name.lower(), DEMO_TABLE_STATS["transactions"])
+            
+        # Use the query execution time from the original analysis if we have it!
+        original_exec_time = rec.get("metadata", {}).get("execution_time_ms", None)
 
         if self.simulator:
             try:
                 sim_result = self.simulator.simulate_change(
                     rec, table_stats,
-                    {"query_frequency": 50, "execution_time_ms": 1000}
+                    [{"execution_time_ms": original_exec_time}] if original_exec_time else []
                 )
                 result = {
                     "recommendation_id": rec_id,
@@ -683,6 +693,9 @@ class AnalysisService:
 
 
 analysis_service = AnalysisService()
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Play, Sparkles, Shield, Database, AlertTriangle, Info, AlertCircle, FlaskConical } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -51,7 +51,7 @@ const QueryAnalyzer = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">AI Database Optimizer</h1>
-          <p className="text-sm text-slate-500">Privacy-Preserving â€¢ Explainable â€¢ Safe Optimization</p>
+          <p className="text-sm text-slate-500">Privacy-Preserving • Explainable • Safe Optimization</p>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ const QueryAnalyzer = () => {
                               <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <span className="text-slate-500">Planning Time</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">
-                    {results?.metadata?.planning_time_ms ? ` ms` : (results ? '45 ms' : '-')}
+                    {results?.metadata?.planning_time_ms ? `${results.metadata.planning_time_ms} ms` : (results ? '45 ms' : '-')}
                   </span>
                 </div>
                 <div className="flex justify-between">
