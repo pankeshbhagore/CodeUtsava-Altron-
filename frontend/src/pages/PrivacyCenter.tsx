@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Lock, EyeOff, FileKey, CheckCircle2, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -203,3 +203,4 @@ const PrivacyCenter = () => {
   );
 };
 
+export default PrivacyCenter;
