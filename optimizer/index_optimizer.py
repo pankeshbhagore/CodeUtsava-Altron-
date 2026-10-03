@@ -32,9 +32,21 @@ class IndexOptimizer:
         return self._analyze_heuristic(normalized_sql, metadata)
 
     def _analyze_with_llm(self, sql: str, metadata: Dict[str, Any]) -> List[IndexRecommendation]:
-        model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
-        prompt = f'''
-Analyze this SQL query and recommend ONE highly effective database index (single or composite) to optimize it.
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        
+        # Check for pgvector operations
+        is_vector_search = "<->" in sql or "<#>" in sql or "<=>" in sql
+        vector_prompt = ""
+        if is_vector_search:
+            vector_prompt = "WARNING: This query uses pgvector distance operators. You MUST recommend an HNSW or IVFFlat index. Type should be vector. "
+            
+        system_prompt = """You are the Consensus AI representing a debate between an Aggressive Optimizer Agent and a Conservative DBA Agent.
+1. The Optimizer Agent wants maximum read speed and suggests complex/large indexes.
+2. The Conservative DBA Agent worries about write latency, storage cost, and index maintenance.
+You must synthesize their debate and provide the final consensus recommendation."""
+
+        prompt = f"""{vector_prompt}
+Analyze this SQL query and recommend ONE highly effective database index (single, composite, or vector) to optimize it.
 SQL:
 {sql}
 
@@ -43,41 +55,44 @@ Metadata:
 
 Respond with valid JSON matching this schema:
 {{
-  "type": "composite" or "single",
+  "type": "composite",
   "columns": ["col1", "col2"],
   "table": "table_name_here",
-  "create_sql": "CREATE INDEX idx_name ON table_name (col1, col2);",
+  "create_sql": "CREATE INDEX idx_name ON table_name ...;",
   "drop_sql": "DROP INDEX idx_name;",
-  "reason": "Clear explanation of why this helps",
+  "reason": "Explain the final decision, mentioning the multi-agent consensus (e.g., Optimizer suggested X, DBA raised concerns about Y, so we agreed on Z).",
   "estimated_improvement_pct": 85.0,
   "storage_overhead_mb": 2.5,
   "write_latency_impact_ms": 1.2,
-  "risk_level": "LOW" or "MEDIUM"
+  "risk_level": "LOW"
 }}
 Return ONLY the JSON object.
-'''
+"""
         try:
             response = self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0.2,
                 response_format={ "type": "json_object" }
             )
             data = json.loads(response.choices[0].message.content)
             
             return [IndexRecommendation(
-                type=data.get('type', 'composite'),
-                columns=data.get('columns', []),
-                table=data.get('table', metadata.get('tables', ['unknown'])[0]),
-                create_sql=data.get('create_sql', ''),
-                drop_sql=data.get('drop_sql', ''),
-                reason=data.get('reason', 'AI Recommended Index'),
-                evidence='Identified by AI analysis of WHERE and JOIN clauses.',
-                estimated_improvement_pct=float(data.get('estimated_improvement_pct', 80.0)),
-                storage_overhead_mb=float(data.get('storage_overhead_mb', 1.0)),
-                write_latency_impact_ms=float(data.get('write_latency_impact_ms', 1.0)),
+                type=data.get("type", "composite"),
+                columns=data.get("columns", []),
+                table=data.get("table", metadata.get("tables", ["unknown"])[0]),
+                create_sql=data.get("create_sql", ""),
+                drop_sql=data.get("drop_sql", ""),
+                reason=data.get("reason", "AI Recommended Index"),
+                evidence="Identified by Multi-Agent Consensus Analysis.",
+                estimated_improvement_pct=float(data.get("estimated_improvement_pct", 80.0)),
+                storage_overhead_mb=float(data.get("storage_overhead_mb", 1.0)),
+                write_latency_impact_ms=float(data.get("write_latency_impact_ms", 1.0)),
                 confidence=0.95,
-                risk_level=data.get('risk_level', 'LOW')
+                risk_level=data.get("risk_level", "LOW")
             )]
         except Exception as e:
             print(f"LLM Error: {e}")

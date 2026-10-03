@@ -51,3 +51,9 @@ AND transaction_date > '2023-01-01';
 SELECT date_trunc('month', transaction_date), SUM(quantity * unit_price) 
 FROM transactions 
 GROUP BY 1;
+-- Query 4: Semantic Search (pgvector)
+-- Uses pgvector distance operator without an HNSW index, causing a full table scan.
+SELECT id, title, content_embedding <-> '[0.1, 0.2, 0.3, 0.4]'::vector AS distance
+FROM products
+ORDER BY distance
+LIMIT 10;

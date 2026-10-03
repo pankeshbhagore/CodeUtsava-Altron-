@@ -153,24 +153,34 @@ const Recommendations = () => {
               </div>
             </div>
 
-            <div className="mt-auto pt-6 flex space-x-3">
-              {selectedRec.status === 'pending' && (
+                          <div className="mt-auto pt-6 flex space-x-3">
+                {selectedRec.status === 'pending' && (
+                  <button 
+                    onClick={() => handleSimulate(selectedRec.id)}
+                    className="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
+                  >
+                    <Play className="w-4 h-4 mr-2" /> Run Simulation
+                  </button>
+                )}
+                {selectedRec.status !== 'approved' && (
+                  <button 
+                    onClick={() => handleApprove(selectedRec.id)}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
+                  >
+                    <Check className="w-4 h-4 mr-2" /> Approve & Apply
+                  </button>
+                )}
                 <button 
-                  onClick={() => handleSimulate(selectedRec.id)}
-                  className="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
+                  onClick={async () => {
+                    const res = await fetch('http://localhost:8000/api/recommendations/' + selectedRec.id + '/export-gitops');
+                    const data = await res.json();
+                    alert("GitOps Export Generated (Flyway & Liquibase)!\n\nFlyway Up: " + data.flyway.up_filename + "\n\n" + data.flyway.up_content);
+                  }}
+                  className="px-6 py-2 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors flex items-center"
                 >
-                  <Play className="w-4 h-4 mr-2" /> Run Simulation
+                  Export GitOps
                 </button>
-              )}
-              {selectedRec.status !== 'approved' && (
-                <button 
-                  onClick={() => handleApprove(selectedRec.id)}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
-                >
-                  <Check className="w-4 h-4 mr-2" /> Approve & Apply
-                </button>
-              )}
-            </div>
+              </div>
           </div>
         ) : (
           <div className="w-full md:w-2/3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center">
@@ -183,3 +193,4 @@ const Recommendations = () => {
 };
 
 export default Recommendations;
+

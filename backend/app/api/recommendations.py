@@ -31,3 +31,38 @@ def approve_recommendation(rec_id: str):
 @router.post("/{rec_id}/reject")
 def reject_recommendation(rec_id: str):
     return analysis_service.reject_recommendation(rec_id)
+@router.get("/{rec_id}/export-gitops")
+def export_gitops(rec_id: str):
+    rec = analysis_service.get_recommendation(rec_id)
+    if not rec:
+        return {"error": "Recommendation not found"}
+        
+    import time
+    version = str(int(time.time()))
+    up_sql = rec.get("create_sql", "")
+    down_sql = rec.get("rollback_sql", "")
+    table = rec.get("table", "unknown")
+    
+    return {
+        "flyway": {
+            "up_filename": f"V{version}__optimize_{table}.sql",
+            "up_content": up_sql,
+            "down_filename": f"U{version}__optimize_{table}.sql",
+            "down_content": down_sql
+        },
+        "liquibase": {
+            "filename": f"db.changelog-{version}.xml",
+            "content": f'''<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet id="{version}-1" author="privdb-optimizer">
+        <sql>{up_sql}</sql>
+        <rollback>
+            <sql>{down_sql}</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>'''
+        }
+    }

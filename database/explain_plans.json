@@ -1,31 +1,65 @@
 {
-  "queries": [
-    {
-      "query": "SELECT * FROM transactions;",
-      "plan": {
-        "Plan": {
-          "Node Type": "Seq Scan",
-          "Relation Name": "transactions",
-          "Startup Cost": 0.00,
-          "Total Cost": 1034.00,
-          "Plan Rows": 60000,
-          "Plan Width": 72
-        }
-      }
-    },
-    {
-      "query": "SELECT * FROM orders WHERE status = 'pending';",
-      "plan": {
-        "Plan": {
-          "Node Type": "Seq Scan",
-          "Relation Name": "orders",
-          "Filter": "(status = 'pending'::text)",
-          "Startup Cost": 0.00,
-          "Total Cost": 284.00,
-          "Plan Rows": 3750,
-          "Plan Width": 68
-        }
-      }
-    }
-  ]
+    "queries":  [
+                    {
+                        "query":  "SELECT * FROM transactions;",
+                        "plan":  {
+                                     "Plan":  {
+                                                  "Node Type":  "Seq Scan",
+                                                  "Relation Name":  "transactions",
+                                                  "Startup Cost":  0.00,
+                                                  "Total Cost":  1034.00,
+                                                  "Plan Rows":  60000,
+                                                  "Plan Width":  72
+                                              }
+                                 }
+                    },
+                    {
+                        "query":  "SELECT * FROM orders WHERE status = \u0027pending\u0027;",
+                        "plan":  {
+                                     "Plan":  {
+                                                  "Node Type":  "Seq Scan",
+                                                  "Relation Name":  "orders",
+                                                  "Filter":  "(status = \u0027pending\u0027::text)",
+                                                  "Startup Cost":  0.00,
+                                                  "Total Cost":  284.00,
+                                                  "Plan Rows":  3750,
+                                                  "Plan Width":  68
+                                              }
+                                 }
+                    },
+                    {
+                        "query":  "SELECT id, title, content_embedding \u003c-\u003e \u0027[0.1, 0.2, 0.3, 0.4]\u0027::vector AS distance FROM products ORDER BY distance LIMIT 10;",
+                        "plan":  {
+                                     "Plan":  {
+                                                  "Plan Rows":  10,
+                                                  "Plans":  [
+                                                                {
+                                                                    "Plan Rows":  50000,
+                                                                    "Plans":  [
+                                                                                  {
+                                                                                      "Relation Name":  "products",
+                                                                                      "Plan Rows":  50000,
+                                                                                      "Node Type":  "Seq Scan",
+                                                                                      "Startup Cost":  0,
+                                                                                      "Plan Width":  1024,
+                                                                                      "Total Cost":  500
+                                                                                  }
+                                                                              ],
+                                                                    "Node Type":  "Sort",
+                                                                    "Sort Key":  [
+                                                                                     "(content_embedding \u003c-\u003e \u0027[0.1, 0.2, 0.3, 0.4]\u0027::vector)"
+                                                                                 ],
+                                                                    "Plan Width":  16,
+                                                                    "Startup Cost":  1000,
+                                                                    "Total Cost":  1001
+                                                                }
+                                                            ],
+                                                  "Node Type":  "Limit",
+                                                  "Startup Cost":  1000,
+                                                  "Plan Width":  16,
+                                                  "Total Cost":  1001
+                                              }
+                                 }
+                    }
+                ]
 }

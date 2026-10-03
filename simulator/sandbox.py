@@ -16,6 +16,7 @@ class SimMetrics(BaseModel):
     cache_hit_ratio: float
     estimated_rows_scanned: int
     index_size_mb: float
+    carbon_emissions_grams: float = Field(default=0.0)
 
 class SimulationResult(BaseModel):
     before_metrics: SimMetrics
@@ -38,6 +39,10 @@ class SandboxSimulator:
         avg_row_size = table_stats.get('avg_row_size', 100)
         
         before_exec_time = workload[0].get('execution_time_ms') if workload and workload[0].get('execution_time_ms') else MetricsCalculator.estimate_seq_scan_cost(row_count, avg_row_size)
+        # Simplified Carbon footprint calculation (for 1M queries)
+        # Assuming 200W server, PUE 1.2, 400g CO2/kWh
+        co2_per_ms = (200 * 1.2 * 400) / (3600 * 1000 * 1000) * 1_000_000
+        
         before_metrics = SimMetrics(
             execution_time_ms=before_exec_time,
             planning_time_ms=1.5,
@@ -47,7 +52,8 @@ class SandboxSimulator:
             io_cost=(row_count * avg_row_size / MetricsCalculator.PAGE_SIZE_BYTES) * MetricsCalculator.SEQ_PAGE_COST,
             cache_hit_ratio=0.8,
             estimated_rows_scanned=row_count,
-            index_size_mb=0.0
+            index_size_mb=0.0,
+            carbon_emissions_grams=before_exec_time * co2_per_ms
         )
         
         # After metrics
@@ -79,6 +85,7 @@ class SandboxSimulator:
             improvement = 40.0
             risk = "MEDIUM"
 
+        after_metrics.carbon_emissions_grams = after_metrics.execution_time_ms * co2_per_ms
         net_benefit = max(0.0, improvement - (after_metrics.write_latency_ms - before_metrics.write_latency_ms))
         
         return SimulationResult(
@@ -91,5 +98,6 @@ class SandboxSimulator:
             simulation_id=str(uuid.uuid4()),
             timestamp=datetime.now(timezone.utc).isoformat()
         )
+
 
 

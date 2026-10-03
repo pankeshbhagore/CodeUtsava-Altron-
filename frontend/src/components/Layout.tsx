@@ -94,8 +94,11 @@ const Layout: React.FC<LayoutProps> = ({ children, darkMode, toggleDarkMode }) =
           </div>
         </div>
       </main>
+      <Copilot />
     </div>
   );
 };
 
 export default Layout;
+
+

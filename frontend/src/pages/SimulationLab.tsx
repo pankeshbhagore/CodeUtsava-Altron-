@@ -96,7 +96,7 @@ const SimulationLab = () => {
               {/* Before */}
               <div className="w-[45%]">
                 <div className="bg-red-50 text-red-700 py-2 px-4 rounded-t-lg font-bold text-sm text-center border-b border-red-100">
-                  ⚠️ Before Optimization
+                  ?? Before Optimization
                 </div>
                 <div className="border border-slate-100 rounded-b-lg">
                   <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
@@ -161,36 +161,55 @@ const SimulationLab = () => {
             </div>
           </div>
 
-          {/* Improvement Panel */}
-          <div className="w-full lg:w-1/4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col items-center justify-center">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-6 w-full text-left">Estimated Improvement</h3>
-            
-            <div className="relative w-40 h-40 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="12" fill="none" />
-                <circle 
-                  cx="50" cy="50" r="40" 
-                  stroke="#10b981" 
-                  strokeWidth="12" 
-                  fill="none" 
-                  strokeDasharray={`${currentSim.improvement_pct * 2.51} 251`} 
-                  className="transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute text-center">
-                <p className="text-3xl font-extrabold text-slate-800">{currentSim.improvement_pct}%</p>
+                      {/* Improvement Panel */}
+            <div className="w-full lg:w-1/4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col items-center justify-between">
+              <div className="w-full">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-6 w-full text-left">Estimated Improvement</h3>
+                
+                <div className="relative w-40 h-40 flex items-center justify-center mx-auto">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="12" fill="none" />
+                    <circle 
+                      cx="50" cy="50" r="40" 
+                      stroke="#10b981" 
+                      strokeWidth="12" 
+                      fill="none" 
+                      strokeDasharray="251.2" 
+                      strokeDashoffset={251.2 - (251.2 * (simResult ? simResult.improvement_pct : 90) / 100)} 
+                      strokeLinecap="round" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl font-black text-slate-800 dark:text-slate-100">{simResult ? Math.round(simResult.improvement_pct) : 90}%</span>
+                  </div>
+                </div>
+                <p className="text-emerald-600 font-bold mt-4 text-center">Query Time Reduced</p>
+              </div>
+
+              {simResult && simResult.before_metrics.carbon_emissions_grams !== undefined && (
+                <div className="mt-8 w-full bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                  <h4 className="text-emerald-800 dark:text-emerald-400 font-bold text-sm mb-2 flex items-center">
+                    ?? Green Computing Impact
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
+                    Estimated CO2 reduction per 1M queries:
+                  </p>
+                  <div className="flex items-end space-x-2">
+                    <span className="text-2xl font-black text-emerald-600">
+                      {(simResult.before_metrics.carbon_emissions_grams - simResult.after_metrics.carbon_emissions_grams).toFixed(1)}
+                    </span>
+                    <span className="text-sm text-emerald-700 font-semibold mb-1">grams CO2</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-auto pt-8 w-full">
+                <p className="text-xs text-slate-500 flex items-start">
+                  <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0 text-emerald-500" />
+                  Changes not applied to production. This is a simulated result.
+                </p>
               </div>
             </div>
-            
-            <p className="font-bold text-emerald-600 mt-4 text-center">Query Time Reduced</p>
-            
-            <div className="mt-8 pt-4 border-t border-slate-100 w-full flex items-start">
-              <AlertTriangle className="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-slate-500 leading-tight">
-                Changes not applied to production. This is a simulated result.
-              </p>
-            </div>
-          </div>
 
         </div>
       )}
@@ -199,4 +218,7 @@ const SimulationLab = () => {
 };
 
 export default SimulationLab;
+
+
+
 
