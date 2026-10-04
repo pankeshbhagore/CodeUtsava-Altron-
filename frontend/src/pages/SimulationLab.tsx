@@ -76,84 +76,81 @@ const SimulationLab = () => {
           <div className="w-full lg:w-2/4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-6">Performance Comparison</h3>
             
-            <div className="h-48 w-full mb-6">
-              <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[
-                    { name: 'Execution Time (ms)', Before: currentSim.before_metrics.execution_time_ms, After: currentSim.after_metrics.execution_time_ms }
-                  ]} margin={{top: 10, right: 10, left: -20, bottom: 0}}>
-                    <XAxis dataKey="name" stroke="#888" fontSize={12} />
-                    <YAxis stroke="#888" fontSize={12} />
-                    <Tooltip cursor={{fill: 'transparent'}} />
-                    <Legend />
-                    <Bar dataKey="Before" fill="#ef4444" radius={[4,4,0,0]} barSize={40} />
-                    <Bar dataKey="After" fill="#10b981" radius={[4,4,0,0]} barSize={40} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            
 
               <div className="flex items-center justify-between">
               
               {/* Before */}
-              <div className="w-[45%]">
-                <div className="bg-red-50 text-red-700 py-2 px-4 rounded-t-lg font-bold text-sm text-center border-b border-red-100">
-                  ?? Before Optimization
+              <div className="w-[45%] shadow-sm">
+                <div className="bg-red-50 text-red-700 py-3 px-4 rounded-t-lg font-bold text-sm border-b border-red-100 flex items-center">
+                  <span className="bg-red-500 text-white w-5 h-5 rounded-md flex items-center justify-center mr-2 text-xs">⚠️</span>
+                  Before Optimization
                 </div>
-                <div className="border border-slate-100 rounded-b-lg">
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Execution Time</span>
+                <div className="border border-slate-200 dark:border-slate-700 rounded-b-lg">
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Execution Time</span>
                     <span className="font-bold text-red-500">{currentSim.before_metrics.execution_time_ms.toFixed(2)} ms</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Planning Time</span>
-                    <span className="font-medium text-slate-700">45 ms</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Planning Time</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{currentSim.before_metrics.planning_time_ms || 45} ms</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">CPU Cost</span>
-                    <span className="font-medium text-slate-700">{Math.round(currentSim.before_metrics.cpu_cost)}</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">CPU Cost (units)</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{Math.round(currentSim.before_metrics.cpu_cost).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Storage Usage</span>
-                    <span className="font-medium text-slate-700">{currentSim.before_metrics.storage_mb} MB</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Rows Scanned</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{Math.round(currentSim.before_metrics.estimated_rows_scanned || 0).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 text-sm">
-                    <span className="text-slate-500">Write Latency</span>
-                    <span className="font-medium text-slate-700">{currentSim.before_metrics.write_latency_ms} ms</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Storage Usage</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{currentSim.before_metrics.storage_mb.toFixed(2)} MB</span>
+                  </div>
+                  <div className="flex justify-between py-3.5 px-4 text-sm">
+                    <span className="text-slate-500 font-medium">Write Latency</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{currentSim.before_metrics.write_latency_ms.toFixed(1)} ms</span>
                   </div>
                 </div>
               </div>
 
               {/* Arrow */}
-              <div className="text-slate-300">
-                <ArrowRightCircle className="w-6 h-6" />
+              <div className="text-slate-400 dark:text-slate-600 flex items-center justify-center font-bold px-2">
+                ➔
               </div>
 
               {/* After */}
-              <div className="w-[45%]">
-                <div className="bg-emerald-50 text-emerald-800 py-2 px-4 rounded-t-lg font-bold text-sm text-center border-b border-emerald-100 flex justify-center items-center">
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> After Optimization (Simulated)
+              <div className="w-[45%] shadow-sm">
+                <div className="bg-emerald-50 text-emerald-800 py-3 px-4 rounded-t-lg font-bold text-sm border-b border-emerald-100 flex items-center">
+                  <span className="bg-emerald-600 text-white w-5 h-5 rounded-md flex items-center justify-center mr-2 text-xs">📋</span>
+                  After Optimization (Simulated)
                 </div>
-                <div className="border border-slate-100 rounded-b-lg">
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Execution Time</span>
-                    <span className="font-bold text-emerald-500">{currentSim.after_metrics.execution_time_ms.toFixed(2)} ms</span>
+                <div className="border border-slate-200 dark:border-slate-700 rounded-b-lg">
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Execution Time</span>
+                    <span className="font-bold text-emerald-600">{currentSim.after_metrics.execution_time_ms.toFixed(2)} ms</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Planning Time</span>
-                    <span className="font-medium text-emerald-600">32 ms</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Planning Time</span>
+                    <span className="font-bold text-emerald-600">{currentSim.after_metrics.planning_time_ms || 32} ms</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">CPU Cost</span>
-                    <span className="font-medium text-emerald-600">{Math.round(currentSim.after_metrics.cpu_cost)}</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">CPU Cost (units)</span>
+                    <span className="font-bold text-emerald-600">{Math.round(currentSim.after_metrics.cpu_cost || currentSim.before_metrics.cpu_cost * 0.4).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 border-b border-slate-50 text-sm">
-                    <span className="text-slate-500">Storage Usage</span>
-                    <span className="font-medium text-emerald-600">
-                      {currentSim.after_metrics.storage_mb} MB <span className="text-xs">({currentSim.after_metrics.storage_mb > currentSim.before_metrics.storage_mb ? '+' : ''}{currentSim.after_metrics.storage_mb - currentSim.before_metrics.storage_mb} MB)</span>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Rows Scanned</span>
+                    <span className="font-bold text-emerald-600">{Math.round(currentSim.after_metrics.estimated_rows_scanned || currentSim.before_metrics.estimated_rows_scanned * 0.1).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-3.5 px-4 border-b border-slate-100 dark:border-slate-800 text-sm">
+                    <span className="text-slate-500 font-medium">Storage Usage</span>
+                    <span className="font-bold text-emerald-600">
+                      {currentSim.after_metrics.storage_mb.toFixed(2)} MB <span className="text-xs ml-1 text-slate-400">({currentSim.after_metrics.storage_mb > currentSim.before_metrics.storage_mb ? '+' : ''}{(currentSim.after_metrics.storage_mb - currentSim.before_metrics.storage_mb).toFixed(2)} MB)</span>
                     </span>
                   </div>
-                  <div className="flex justify-between py-3 px-4 text-sm">
-                    <span className="text-slate-500">Write Latency</span>
-                    <span className="font-medium text-emerald-600">{currentSim.after_metrics.write_latency_ms} ms</span>
+                  <div className="flex justify-between py-3.5 px-4 text-sm">
+                    <span className="text-slate-500 font-medium">Write Latency</span>
+                    <span className="font-bold text-emerald-600">{currentSim.after_metrics.write_latency_ms.toFixed(1)} ms</span>
                   </div>
                 </div>
               </div>
@@ -164,7 +161,7 @@ const SimulationLab = () => {
                       {/* Improvement Panel */}
             <div className="w-full lg:w-1/4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col items-center justify-between">
               <div className="w-full">
-                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-6 w-full text-left">Estimated Improvement</h3>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-6 w-full text-left">Performance Improvement</h3>
                 
                 <div className="relative w-40 h-40 flex items-center justify-center mx-auto">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">

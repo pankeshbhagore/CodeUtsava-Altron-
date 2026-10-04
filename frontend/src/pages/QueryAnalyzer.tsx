@@ -28,18 +28,19 @@ const QueryAnalyzer = () => {
   const handleAnalyze = async () => {
     setAnalyzing(true);
     setError(null);
+    setResults(null);
     try {
       const data = await apiClient.analyzeQuery(sql);
       setResults(data);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Analysis failed. Please check SQL syntax.');
     } finally {
       setAnalyzing(false);
     }
   };
 
   const loadSample = () => {
-    setSql(`SELECT c.customer_id, c.name,\n       SUM(o.amount) as total_amount\nFROM customers c\nJOIN orders o ON c.customer_id = o.customer_id\nWHERE o.order_date >= '2026-01-01'\nGROUP BY c.customer_id, c.name\nORDER BY total_amount DESC;`);
+    setSql(`SELECT c.id as customer_id, c.full_name as name,\n       SUM(t.quantity * t.unit_price) as total_amount\nFROM customers c\nJOIN orders o ON c.id = o.customer_id\nJOIN transactions t ON o.id = t.order_id\nWHERE o.order_date >= '2026-01-01'\nGROUP BY c.id, c.full_name\nORDER BY total_amount DESC;`);
   };
 
   return (
@@ -54,6 +55,16 @@ const QueryAnalyzer = () => {
           <p className="text-sm text-slate-500">Privacy-Preserving • Explainable • Safe Optimization</p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-4 rounded-lg flex items-start">
+          <AlertTriangle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-sm">Analysis Failed</h3>
+            <p className="text-sm mt-1">{error}</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Input */}
@@ -156,17 +167,17 @@ const QueryAnalyzer = () => {
               </div>
             </div>
 
-            {/* Key Issues */}
+            {/* Key Issues Detected */}
             <div className="w-full lg:w-1/2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Optimization Opportunities</h3>
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4">Key Issues Detected</h3>
               <ul className="space-y-3">
-                {results.recommendations && results.recommendations.length > 0 ? (
-                  results.recommendations.map((rec: any, idx: number) => (
+                {results.bottlenecks && results.bottlenecks.length > 0 ? (
+                  results.bottlenecks.map((b: any, idx: number) => (
                     <li key={idx} className="flex items-start text-sm text-slate-700 dark:text-slate-300">
-                      <AlertCircle className="w-4 h-4 text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-semibold">{rec.type === 'composite' ? 'Composite Index' : rec.type === 'single' ? 'Single Index' : rec.type} recommended on {rec.table}.</span>
-                        <span className="text-slate-500 block text-xs mt-0.5">Estimated Improvement: {rec.estimated_improvement_pct}%</span>
+                        <span className="font-semibold">{b.type}</span>
+                        <span className="text-slate-500 block text-xs mt-0.5">{b.description}</span>
                       </div>
                     </li>
                   ))

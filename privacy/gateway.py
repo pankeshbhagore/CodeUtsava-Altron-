@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from pydantic import BaseModel
 from typing import Optional, Any
@@ -9,7 +10,7 @@ from .bitmasker import AttributeBitmasker
 
 class PrivacyProcessedResult(BaseModel):
     anonymized_sql: str
-    metadata: dict
+    metadata: Any
     pii_scan_result: PIIDetectionResult
     audit_entry: AuditEntry
     is_safe: bool
@@ -34,13 +35,24 @@ class PrivacyGateway:
         raw_metadata = self.metadata_extractor.extract_metadata(raw_sql, execution_stats)
         
         # Apply strict attribute bitmasking to metadata before returning
-        metadata = self.bitmasker.mask_dict(raw_metadata)
+        masked_dict = self.bitmasker.mask_dict(raw_metadata.model_dump() if hasattr(raw_metadata, 'model_dump') else raw_metadata)
+        
+        # Restore to QueryMetadata object if it was one
+        if hasattr(raw_metadata, 'model_validate'):
+            metadata = type(raw_metadata).model_validate(masked_dict)
+        else:
+            metadata = masked_dict
 
         payload_hash = hashlib.sha256(
             anonymized.anonymized_sql.encode()
         ).hexdigest()
 
         fields_masked = anonymized.literal_count + len(anonymized.table_mapping) + len(anonymized.column_mapping)
+
+        # Override anonymization status if PII is detected (we blocked it)
+        is_safe = ("SUCCESS" in anonymization_status or anonymization_status == "PASSED") and not pii_result.pii_found
+        if pii_result.pii_found:
+            anonymization_status = "BLOCKED_PII_DETECTED"
 
         audit = self.auditor.log_request(
             request_id=request_id,
@@ -53,7 +65,11 @@ class PrivacyGateway:
             result_hash=""
         )
 
-        is_safe = "SUCCESS" in anonymization_status or anonymization_status == "PASSED"
+        is_safe = ("SUCCESS" in anonymization_status or anonymization_status == "PASSED") and not pii_result.pii_found
+        
+        # Override anonymization status if PII is detected (we blocked it)
+        if pii_result.pii_found:
+            anonymization_status = "BLOCKED_PII_DETECTED"
 
         return PrivacyProcessedResult(
             anonymized_sql=anonymized.anonymized_sql,

@@ -80,10 +80,11 @@ const ExecutionPlan = () => {
 
   const getNodeColor = (status: string) => {
     switch (status) {
-      case 'healthy': return 'bg-green-100 border-green-300';
-      case 'warning': return 'bg-yellow-100 border-yellow-300';
-      case 'bottleneck': return 'bg-red-100 border-red-300';
-      default: return 'bg-slate-100 border-slate-300';
+      case 'healthy': return 'bg-green-100 border-green-500 text-green-900';
+      case 'warning': return 'bg-yellow-100 border-yellow-500 text-yellow-900';
+      case 'critical':
+      case 'bottleneck': return 'bg-red-100 border-red-500 text-red-900 shadow-red-200';
+      default: return 'bg-slate-50 border-slate-300 text-slate-800';
     }
   };
 
@@ -100,7 +101,7 @@ const ExecutionPlan = () => {
         >
           <p className="font-bold text-slate-800">{node.node_type || node["Node Type"]}</p>
           {(node.relation_name || node["Relation Name"]) && <p className="text-sm font-medium text-slate-700">{node.relation_name || node["Relation Name"]}</p>}
-                    <p className="text-xs text-slate-600 mt-1">(cumul. cost: {(node.cost || node["Total Cost"] || 0).toLocaleString()})</p>
+                    <p className="text-xs text-slate-600 mt-1">(cost: {(node.cost || node["Total Cost"] || 0).toLocaleString()})</p>
                     <p className="text-xs text-slate-600">(rows: {(node.rows ?? node["Actual Rows"] ?? node["Plan Rows"] ?? 0).toLocaleString()})</p>
         </div>
         
@@ -159,8 +160,14 @@ const ExecutionPlan = () => {
         {/* Left: Visual json */}
         <div className="w-full lg:w-2/3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-x-auto min-h-[500px]">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100">Query Execution Plan (Graph Representation)</h3>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center">
+              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mr-2 font-mono border border-purple-200">LIVE DB CONNECTION</span>
+              Query Execution Plan (GNN Graph)
+            </h3>
           </div>
+          <p className="text-sm text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100 dark:bg-slate-800 dark:border-slate-700">
+            When you click Generate, our backend connects directly to PostgreSQL via psycopg2, runs <code>EXPLAIN (FORMAT JSON)</code>, and parses the output into a Graph Neural Network (GCN) layer to mathematically detect bottlenecks.
+          </p>
           
           {!result ? (
             <div className="flex flex-col items-center justify-center h-[400px] text-slate-400 border-2 border-dashed border-slate-200 rounded-xl p-8">
@@ -180,6 +187,12 @@ const ExecutionPlan = () => {
                   value={sql}
                   onChange={(e) => setSql(e.target.value)}
                   placeholder="Paste your raw SQL query here... (We will run EXPLAIN for you)"
+                  defaultValue="SELECT c.name, sum(o.total_amount)
+FROM customers c 
+JOIN orders o ON c.id = o.customer_id 
+WHERE c.region_id = 5 
+GROUP BY c.name 
+ORDER BY sum(o.total_amount) DESC;"
                   className="w-full max-w-lg h-32 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-mono mb-4 resize-none"
                 />
               ) : (
@@ -245,7 +258,7 @@ const ExecutionPlan = () => {
                 <div className="flex justify-between pt-1">
                   <span className="text-slate-500">Issue</span>
                   <span className={`font-bold ${selectedNode.status === 'bottleneck' ? 'text-red-500' : 'text-slate-400'}`}>
-                    {selectedNode.status === 'bottleneck' ? 'High cost due to full table scan' : 'None'}
+                    {selectedNode.status === 'bottleneck' ? 'High cost due to full table scan or inefficient join' : 'None'}
                   </span>
                 </div>
               </div>

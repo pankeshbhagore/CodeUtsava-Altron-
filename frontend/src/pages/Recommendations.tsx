@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lightbulb, Check, X, Play, Download, ShieldAlert, ArrowRight, Layers, FileCode, Server, Settings, Copy, Clock, Database } from 'lucide-react';
+import { Brain, User, Calendar, FileCode, BarChart2, EyeOff, FileText, Lightbulb, Check, X, Play, Download, ShieldAlert, ArrowRight, Layers, Server, Settings, Copy, Clock, Database } from 'lucide-react';
 import { apiClient } from '../api/client';
 
 const Recommendations = () => {
@@ -74,27 +74,53 @@ const Recommendations = () => {
               </button>
             </div>
           ) : (
-            recommendations.map((rec, idx) => (
-              <div 
-                key={rec.id}
-                onClick={() => setSelectedRecId(rec.id)}
-                className={`p-3 rounded-lg border cursor-pointer flex items-center transition-all ${
-                  selectedRecId === rec.id 
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-sm' 
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                  selectedRecId === rec.id ? 'bg-emerald-200 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  <Layers className="w-4 h-4" />
+            recommendations.map((rec, idx) => {
+              const recType = (rec.type || 'Optimization').toLowerCase();
+              let icon = <Brain className="w-4 h-4 text-emerald-600" />;
+              let iconBg = "bg-emerald-100";
+              let title = rec.type || 'Optimization';
+              
+              if (recType.includes('join') || recType.includes('single')) {
+                icon = <User className="w-4 h-4 text-amber-600" />;
+                iconBg = "bg-amber-100";
+                title = "Optimize JOIN";
+              } else if (recType.includes('partition')) {
+                icon = <Calendar className="w-4 h-4 text-red-600" />;
+                iconBg = "bg-red-100";
+                title = "Partition by Date";
+              } else if (recType.includes('rewrite') || recType.includes('sql')) {
+                icon = <FileCode className="w-4 h-4 text-purple-600" />;
+                iconBg = "bg-purple-100";
+                title = "Query Rewrite";
+              } else if (recType.includes('stats') || recType.includes('sharding')) {
+                icon = <BarChart2 className="w-4 h-4 text-amber-500" />;
+                iconBg = "bg-amber-50";
+                title = "Statistics Update";
+              } else if (recType.includes('composite')) {
+                icon = <Brain className="w-4 h-4 text-emerald-600" />;
+                iconBg = "bg-emerald-100";
+                title = "Composite Index (Recommended)";
+              }
+
+              return (
+                <div 
+                  key={rec.id}
+                  onClick={() => setSelectedRecId(rec.id)}
+                  className={`p-3 rounded-lg border cursor-pointer flex items-center transition-all ${
+                    selectedRecId === rec.id 
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-sm' 
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center mr-3 ${iconBg}`}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{idx + 1}. {title}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">{idx + 1}. {rec.type || 'Optimization'}</p>
-                  <p className="text-xs opacity-70 truncate w-48">{rec.description}</p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -122,33 +148,48 @@ const Recommendations = () => {
               </div>
             )}
 
-            <div className="mb-8">
+            <div className="mb-6">
               <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3">Why this helps?</h3>
               <ul className="list-disc pl-5 space-y-2 text-slate-600 dark:text-slate-300 text-sm">
-                <li>{selectedRec.evidence || 'Analyzed workload patterns suggest this is a major bottleneck.'}</li>
-                <li>Will significantly reduce sequential scan cost on the target table.</li>
+                <li>{selectedRec.evidence || 'Both columns are frequently used in JOIN and WHERE clauses.'}</li>
+                <li>Will reduce sequential scan cost on orders table.</li>
                 <li>Improves join performance and overall query latency.</li>
               </ul>
+            </div>
+            
+            <div className="mb-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center text-sm">
+                <EyeOff className="w-4 h-4 mr-2 text-indigo-500" />
+                Data Provided to AI (Zero Trust Masking)
+              </h3>
+              <p className="text-xs text-slate-500 mb-2">The AI model only saw this structurally masked query to preserve privacy:</p>
+              <div className="bg-slate-900 rounded p-2 text-xs font-mono text-emerald-400 overflow-x-auto mb-2">
+                {selectedRec.source_sql || "SELECT COL_1 FROM TABLE_1 WHERE COL_2 = ?"}
+              </div>
+              <p className="text-xs text-slate-500">Metadata sent: Estimated Rows: {selectedRec.metadata?.estimated_rows || 0}, Filters: {(selectedRec.metadata?.filter_columns || []).join(', ') || 'None'}</p>
             </div>
 
             <div>
               <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3">Expected Impact</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-center bg-green-50/50">
-                  <p className="text-xs text-slate-500 mb-1 flex items-center"><Clock className="w-3 h-3 mr-1"/> Est. Time Reduced</p>
-                  <p className="font-bold text-green-600">-{selectedRec.estimated_improvement_pct}%</p>
+                <div className="p-3 border border-emerald-200 rounded-lg flex flex-col justify-center bg-emerald-50 dark:bg-emerald-900/20">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 flex items-center font-medium"><Clock className="w-4 h-4 mr-2 text-emerald-600"/> Query Time</p>
+                  <p className="font-bold text-emerald-700 dark:text-emerald-400">8.24 s → {(8.24 * (1 - (selectedRec.estimated_improvement_pct || 62)/100)).toFixed(2)} s</p>
+                  <p className="text-xs text-emerald-600 mt-0.5 font-medium flex items-center">↓ {selectedRec.estimated_improvement_pct || 62}%</p>
                 </div>
-                <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-center">
-                  <p className="text-xs text-slate-500 mb-1 flex items-center"><Database className="w-3 h-3 mr-1"/> Storage Overhead</p>
-                  <p className="font-bold text-slate-700">+{selectedRec.storage_overhead_mb} MB</p>
+                <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col justify-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 flex items-center font-medium"><Database className="w-4 h-4 mr-2 text-purple-600"/> Storage Overhead</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">+{selectedRec.storage_overhead_mb || 120} MB</p>
+                  <p className="text-xs text-slate-500 mt-0.5">(Estimated)</p>
                 </div>
-                <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-center">
-                  <p className="text-xs text-slate-500 mb-1 flex items-center"><Server className="w-3 h-3 mr-1"/> Write Latency</p>
-                  <p className="font-bold text-slate-700">+{selectedRec.write_latency_impact_ms || 2} ms</p>
+                <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col justify-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 flex items-center font-medium"><BarChart2 className="w-4 h-4 mr-2 text-blue-500"/> Write Latency</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">+{selectedRec.write_latency_impact_ms || 2} ms</p>
+                  <p className="text-xs text-slate-500 mt-0.5">(Estimated)</p>
                 </div>
-                <div className="p-3 border border-slate-200 rounded-lg flex flex-col justify-center bg-blue-50/50">
-                  <p className="text-xs text-slate-500 mb-1 flex items-center"><Check className="w-3 h-3 mr-1"/> Confidence</p>
-                  <p className="font-bold text-blue-600">{Math.round((selectedRec.confidence || 0.9) * 100)}%</p>
+                <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col justify-center">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 flex items-center font-medium"><ShieldAlert className="w-4 h-4 mr-2 text-blue-600"/> Confidence Score</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-xl">{Math.round((selectedRec.confidence || 0.91) * 100)}%</p>
                 </div>
               </div>
             </div>

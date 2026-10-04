@@ -54,7 +54,7 @@ class PrivacyAuditor:
         return entry
 
     def get_audit_trail(self, limit: int = 100) -> List[AuditEntry]:
-        return self.logs[-limit:]
+        return self.logs[-limit:][::-1]
 
     def get_privacy_stats(self) -> PrivacyStats:
         return self.stats

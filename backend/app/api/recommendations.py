@@ -11,7 +11,7 @@ def generate_recommendations(request: RecommendationGenerateRequest):
 
 @router.get("/")
 def get_all_recommendations():
-    return {"recommendations": analysis_service.get_all_recommendations(), "simulations": list(analysis_service.simulations.values())}
+    return {"recommendations": analysis_service.get_all_recommendations(), "simulations": list(analysis_service.simulations.values())[::-1]}
 
 @router.get("/{rec_id}")
 def get_recommendation(rec_id: str):
